@@ -5,15 +5,10 @@ from collections import Counter
 from mungo.fasta import FastaReader
 from mungo.sequence import sixFrameTranslation
 
-#UPROC stuff
-UPROC_LOC = "/home/users/allstaff/tonkin-hill.g/get_domains/uproc-1.1.2/bin/uproc-dna"
-MODEL_LOC = "/home/users/allstaff/tonkin-hill.g/get_domains/uproc-1.1.2/model/"
-DB_LOC = "/home/users/allstaff/tonkin-hill.g/get_domains/uproc_analysis/uproc_domain_merged_to_2_without_segFilter"
 
-#HMMER stuff
-HMMER_SEARCH = "/home/users/allstaff/tonkin-hill.g/rask_based_block_finder2.0/third-party/hmmer-3.1b1/src/hmmsearch"
-HMMER_HMM_DB = "/home/users/allstaff/tonkin-hill.g/get_domains/annotating_reads_to_domains/prot_version_ofDNA_HMMs.hmm"
-
+def getScriptPath():
+    directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    return directory 
 
 def translate_6_frame(in_fasta, out_fasta):
     with open(out_fasta, 'w') as outfile:
@@ -24,6 +19,10 @@ def translate_6_frame(in_fasta, out_fasta):
     return out_fasta
 
 def run_uproc(outFile, read1,read2=None):
+    UPROC_LOC = getScriptPath() + "/third_party/uproc-1.1.2/bin/uproc-dna"
+    MODEL_LOC = getScriptPath() + "/third_party/uproc-1.1.2/model/"
+    DB_LOC = getScriptPath() + "/data/uproc_domain_merged_to_2_without_segFilter"
+
     if read2:
         uproc_cmd = (UPROC_LOC
             + " -p"
@@ -50,7 +49,7 @@ def run_uproc(outFile, read1,read2=None):
     return outFile
 
 def process_uproc_results(listFile, outFile, read1, read2=None):
-    #First read in listfile from uproc that contains the read names we want to keep
+    #First read in listfile from uproc that contains the read names we want
     reads = set()
     with open(listFile, 'r') as listfile:
         for line in listfile:
@@ -82,6 +81,9 @@ def process_uproc_results(listFile, outFile, read1, read2=None):
 
 
 def allocate_w_hmmer(infasta, outFile, evalue):
+    HMMER_SEARCH = getScriptPath() + "/third_party/hmmer-3.1b1/src/hmmsearch"
+    HMMER_HMM_DB = getScriptPath() + "/data/prot_version_ofDNA_HMMs.hmm"
+
     hmm_cmd = (HMMER_SEARCH
         + " --tblout " + outFile
         + " -E " + str(evalue)
@@ -130,7 +132,7 @@ def process_hmmer_results(hmmoutput, outFile):
 
 
 
-def allocate_reads(read1, read2, outdir, dna, evalue):
+def allocate_reads(read1, read2, outdir, evalue):
     #first create output folder if it doesnt exist
     try:
         os.mkdir(outdir)
@@ -149,14 +151,11 @@ def allocate_reads(read1, read2, outdir, dna, evalue):
 
     # uproc_reads = outdir+prefix+"_UprocReads.fa"
 
-    if dna:
-        hmm_out = allocate_w_hmmer(uproc_reads, outdir+prefix+"_nhmmOut_DNA.txt"
-            , evalue)
-    else:
-        uproc_reads_6frame = translate_6_frame(uproc_reads
-            , outdir+prefix+"_Uproc_6frame.fa")
-        hmm_out = allocate_w_hmmer(uproc_reads_6frame
-            , outdir+prefix+"_nhmmOut.txt", evalue)
+    
+    uproc_reads_6frame = translate_6_frame(uproc_reads
+        , outdir+prefix+"_Uproc_6frame.fa")
+    hmm_out = allocate_w_hmmer(uproc_reads_6frame
+        , outdir+prefix+"_nhmmOut.txt", evalue)
     
 
     process_hmmer_results(hmm_out, outdir+prefix+"_DomainCount.csv")
@@ -174,10 +173,6 @@ def main():
     parser.add_option("-R", "--read2", dest="read2", default=None,
         help="the second fastq file")
 
-    parser.add_option("", "--dna", dest="dna", action="store_true"
-        , default=False
-        , help="specifies that the HMMER models are in DNA form")
-
     parser.add_option("-E", "--evalue", dest="evalue", type=float, default=0.01
         , help="the E value to be fed to HMMER")
 
@@ -186,8 +181,7 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    allocate_reads(options.read1, options.read2, options.outdir, options.dna
-        , options.evalue)
+    allocate_reads(options.read1, options.read2, options.outdir, options.evalue)
 
 
 if __name__ == '__main__':
