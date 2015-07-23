@@ -8,12 +8,10 @@ from mungo.sequence import sixFrameTranslation
 #UPROC stuff
 UPROC_LOC = "/home/users/allstaff/tonkin-hill.g/get_domains/uproc-1.1.2/bin/uproc-dna"
 MODEL_LOC = "/home/users/allstaff/tonkin-hill.g/get_domains/uproc-1.1.2/model/"
-# DB_LOC_w_seg = "/home/users/allstaff/tonkin-hill.g/get_domains/uproc_analysis/uproc_domain_merged_to_2/"
 DB_LOC = "/home/users/allstaff/tonkin-hill.g/get_domains/uproc_analysis/uproc_domain_merged_to_2_without_segFilter"
 
 #HMMER stuff
 HMMER_SEARCH = "/home/users/allstaff/tonkin-hill.g/rask_based_block_finder2.0/third-party/hmmer-3.1b1/src/hmmsearch"
-# HMMER_HMM_DB = "/home/users/allstaff/tonkin-hill.g/get_domains/annotating_reads_to_domains/all_domain_HMM_models.hmm"
 HMMER_HMM_DB = "/home/users/allstaff/tonkin-hill.g/get_domains/annotating_reads_to_domains/prot_version_ofDNA_HMMs.hmm"
 
 
