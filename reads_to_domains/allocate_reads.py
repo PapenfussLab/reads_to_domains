@@ -2,6 +2,13 @@ import sys, os
 from optparse import OptionParser
 from subprocess import check_call
 from collections import Counter
+
+# add path to mungo library
+cmd_subfolder = (os.path.dirname(os.path.dirname(os.path.realpath(__file__))) 
+    + "/third-party/")
+if cmd_subfolder not in sys.path:
+    sys.path.insert(0, cmd_subfolder)
+
 from mungo.fasta import FastaReader
 from mungo.sequence import sixFrameTranslation
 
