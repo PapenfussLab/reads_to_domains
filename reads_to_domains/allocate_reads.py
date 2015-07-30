@@ -26,8 +26,8 @@ def translate_6_frame(in_fasta, out_fasta):
     return out_fasta
 
 def run_uproc(outFile, read1,read2=None):
-    UPROC_LOC = getScriptPath() + "/third_party/uproc-1.1.2/bin/uproc-dna"
-    MODEL_LOC = getScriptPath() + "/third_party/uproc-1.1.2/model/"
+    UPROC_LOC = getScriptPath() + "/third-party/uproc-1.1.2/bin/uproc-dna"
+    MODEL_LOC = getScriptPath() + "/third-party/uproc-1.1.2/model/"
     DB_LOC = getScriptPath() + "/data/uproc_domain_merged_to_2_without_segFilter"
 
     if read2:
@@ -88,7 +88,7 @@ def process_uproc_results(listFile, outFile, read1, read2=None):
 
 
 def allocate_w_hmmer(infasta, outFile, evalue):
-    HMMER_SEARCH = getScriptPath() + "/third_party/hmmer-3.1b1/src/hmmsearch"
+    HMMER_SEARCH = getScriptPath() + "/third-party/hmmer-3.1b1/src/hmmsearch"
     HMMER_HMM_DB = getScriptPath() + "/data/prot_version_ofDNA_HMMs.hmm"
 
     hmm_cmd = (HMMER_SEARCH
