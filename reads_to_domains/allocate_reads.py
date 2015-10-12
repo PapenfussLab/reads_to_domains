@@ -4,7 +4,7 @@ from subprocess import check_call
 from collections import Counter
 
 # add path to mungo library
-cmd_subfolder = (os.path.dirname(os.path.dirname(os.path.realpath(__file__))) 
+cmd_subfolder = (os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     + "/third-party/")
 if cmd_subfolder not in sys.path:
     sys.path.insert(0, cmd_subfolder)
@@ -15,7 +15,7 @@ from mungo.sequence import sixFrameTranslation
 
 def getScriptPath():
     directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    return directory 
+    return directory
 
 def translate_6_frame(in_fasta, out_fasta):
     with open(out_fasta, 'w') as outfile:
@@ -73,8 +73,8 @@ def process_uproc_results(listFile, outFile, read1, read2=None):
                     if name in reads:
                         outfile.write(">"+line[1:])
                         outfile.write(seq+"\n")
-                        
-        if read2:               
+
+        if read2:
             with open(read2,'r') as fastqfile:
                 for line in fastqfile:
                     if line[0]=='@':
@@ -89,7 +89,7 @@ def process_uproc_results(listFile, outFile, read1, read2=None):
 
 def allocate_w_hmmer(infasta, outFile, evalue):
     HMMER_SEARCH = getScriptPath() + "/third-party/hmmer-3.1b1/src/hmmsearch"
-    HMMER_HMM_DB = getScriptPath() + "/data/prot_version_ofDNA_HMMs.hmm"
+    HMMER_HMM_DB = getScriptPath() + "/data/all_protein_exon1_domain_HMMs.hmm"
 
     hmm_cmd = (HMMER_SEARCH
         + " --tblout " + outFile
@@ -158,12 +158,12 @@ def allocate_reads(read1, read2, outdir, evalue):
 
     # uproc_reads = outdir+prefix+"_UprocReads.fa"
 
-    
+
     uproc_reads_6frame = translate_6_frame(uproc_reads
         , outdir+prefix+"_Uproc_6frame.fa")
     hmm_out = allocate_w_hmmer(uproc_reads_6frame
         , outdir+prefix+"_nhmmOut.txt", evalue)
-    
+
 
     process_hmmer_results(hmm_out, outdir+prefix+"_DomainCount.csv")
 
