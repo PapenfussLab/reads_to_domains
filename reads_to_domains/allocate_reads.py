@@ -10,6 +10,7 @@ if cmd_subfolder not in sys.path:
     sys.path.insert(0, cmd_subfolder)
 
 from mungo.fasta import FastaReader
+from mungo.fastq import FastqReader
 from mungo.sequence import sixFrameTranslation
 
 
@@ -94,6 +95,7 @@ def allocate_w_hmmer(infasta, outFile, evalue):
     hmm_cmd = (HMMER_SEARCH
         + " --tblout " + outFile
         + " -E " + str(evalue)
+        + " --nonull2 --nobias"
         + " " + HMMER_HMM_DB
         + " " + infasta
         + " > /dev/null")
@@ -139,7 +141,7 @@ def process_hmmer_results(hmmoutput, outFile):
 
 
 
-def allocate_reads(read1, read2, outdir, evalue):
+def allocate_reads(read1, read2, outdir, evalue, uproc):
     #first create output folder if it doesnt exist
     try:
         os.mkdir(outdir)
@@ -151,15 +153,24 @@ def allocate_reads(read1, read2, outdir, evalue):
     #now extract prefix from read name
     prefix = os.path.splitext(os.path.basename(read1))[0]
 
-    uprocOut = run_uproc(outdir+prefix+"_uprocList.csv", read1, read2)
+    if uproc:
+        uprocOut = run_uproc(outdir+prefix+"_uprocList.csv", read1, read2)
 
-    uproc_reads = process_uproc_results(uprocOut, outdir+prefix+"_UprocReads.fa"
-        , read1, read2)
+        hmmerIn = process_uproc_results(uprocOut, outdir+prefix+"_UprocReads.fa"
+            , read1, read2)
 
-    # uproc_reads = outdir+prefix+"_UprocReads.fa"
+        # hmmerIn = outdir+prefix+"_UprocReads.fa"
+    else:
+        hmmerIn = outdir+prefix+"_NoFilterList.csv"
+        with open(hmmerIn, 'w') as outfile:
+            if read2:
+                for h,s,q in FastqReader(read2):
+                    outfile.write(">"+h+"\n"+s+"\n")
+            for h,s,q in FastqReader(read1):
+                outfile.write(">"+h+"\n"+s+"\n")
 
 
-    uproc_reads_6frame = translate_6_frame(uproc_reads
+    uproc_reads_6frame = translate_6_frame(hmmerIn
         , outdir+prefix+"_Uproc_6frame.fa")
     hmm_out = allocate_w_hmmer(uproc_reads_6frame
         , outdir+prefix+"_nhmmOut.txt", evalue)
@@ -186,9 +197,14 @@ def main():
     parser.add_option("-o","--outdir", dest="outdir"
         , help="the output directory for files")
 
+    parser.add_option("", "--noUproc", dest="uproc", default=True
+        , action="store_false"
+        , help="turns off uproc filtering step")
+
     (options, args) = parser.parse_args()
 
-    allocate_reads(options.read1, options.read2, options.outdir, options.evalue)
+    allocate_reads(options.read1, options.read2, options.outdir
+        , options.evalue, options.uproc)
 
 
 if __name__ == '__main__':
