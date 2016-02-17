@@ -1,7 +1,7 @@
 import sys, os
 from optparse import OptionParser
 from subprocess import check_call
-from collections import Counter
+from collections import Counter, defaultdict
 
 # add path to mungo library
 cmd_subfolder = (os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -105,7 +105,7 @@ def allocate_w_hmmer(infasta, outFile, evalue):
 
     return outFile
 
-def process_hmmer_results(hmmoutput, outFile):
+def process_hmmer_results(hmmoutput, outFile, splitIsolates=False):
     #first get the maximum scoreing alignment for each read
     reads = {}
 
@@ -128,20 +128,40 @@ def process_hmmer_results(hmmoutput, outFile):
     for read in reads:
         domain_hits[reads[read][0]] += 1
 
-    #now sort and write to file
-    domain_hit_list = domain_hits.items()
-    domain_hit_list = sorted(domain_hit_list, key=lambda x: x[1]
-        , reverse=True)
+    if not splitIsolates:
+        #now sort and write to file
+        domain_hit_list = domain_hits.items()
+        domain_hit_list = sorted(domain_hit_list, key=lambda x: x[1]
+            , reverse=True)
 
-    with open(outFile,'w') as outfile:
-        for domain in domain_hit_list:
-            outfile.write(domain[0] + "," + str(domain[1]) + "\n")
+        with open(outFile,'w') as outfile:
+            for domain in domain_hit_list:
+                outfile.write(domain[0] + "," + str(domain[1]) + "\n")
+    else:
+        isolates = defaultdict(Counter)
+        #count domain hits by isolate
+        for read in reads:
+            isolate = read.split(".")[0]
+            isolates[isolate][reads[read][0]] += 1
+
+        isolate_keys = isolates.keys()
+        domain_keys = domain_hits.keys()
+        with open(outFile,'w') as outfile:
+            outfile.write("Domains,")
+            for domain in domain_keys:
+                outfile.write(domain + ",")
+            outfile.write("\n")
+            for isolate in isolate_keys:
+                outfile.write(isolate + ",")
+                for domain in domain_keys:
+                    outfile.write(str(isolates[isolate][domain]) + ",")
+                outfile.write("\n")
 
     return outFile
 
 
 
-def allocate_reads(read1, read2, outdir, evalue, uproc):
+def allocate_reads(read1, read2, outdir, evalue, uproc, isolates):
     #first create output folder if it doesnt exist
     try:
         os.mkdir(outdir)
@@ -152,22 +172,32 @@ def allocate_reads(read1, read2, outdir, evalue, uproc):
 
     #now extract prefix from read name
     prefix = os.path.splitext(os.path.basename(read1))[0]
+    if os.path.splitext(os.path.basename(read1))[1] in ["fa","fasta","fas"]:
+        is_fasta = True
+    else:
+        is_fasta = False
 
     if uproc:
         uprocOut = run_uproc(outdir+prefix+"_uprocList.csv", read1, read2)
 
         hmmerIn = process_uproc_results(uprocOut, outdir+prefix+"_UprocReads.fa"
             , read1, read2)
-
         # hmmerIn = outdir+prefix+"_UprocReads.fa"
     else:
-        hmmerIn = outdir+prefix+"_NoFilterList.csv"
+        hmmerIn = outdir+prefix+"_NoFilterList.fa"
         with open(hmmerIn, 'w') as outfile:
-            if read2:
-                for h,s,q in FastqReader(read2):
+            if not is_fasta:
+                if read2:
+                    for h,s in FastaReader(read2):
+                        outfile.write(">"+h+"\n"+s+"\n")
+                for h,s in FastaReader(read1):
                     outfile.write(">"+h+"\n"+s+"\n")
-            for h,s,q in FastqReader(read1):
-                outfile.write(">"+h+"\n"+s+"\n")
+            else:
+                if read2:
+                    for h,s,q in FastqReader(read2):
+                        outfile.write(">"+h+"\n"+s+"\n")
+                for h,s,q in FastqReader(read1):
+                    outfile.write(">"+h+"\n"+s+"\n")
 
 
     uproc_reads_6frame = translate_6_frame(hmmerIn
@@ -176,7 +206,7 @@ def allocate_reads(read1, read2, outdir, evalue, uproc):
         , outdir+prefix+"_nhmmOut.txt", evalue)
 
 
-    process_hmmer_results(hmm_out, outdir+prefix+"_DomainCount.csv")
+    process_hmmer_results(hmm_out, outdir+prefix+"_DomainCount.csv", isolates)
 
     return
 
@@ -201,10 +231,15 @@ def main():
         , action="store_false"
         , help="turns off uproc filtering step")
 
+    parser.add_option("", "--splitIsolates", dest="isolates", default=False
+        , action="store_true"
+        , help=("split counts by isolate, where each reads isolate is given by"
+            + " the string preceding the first period in the read name"))
+
     (options, args) = parser.parse_args()
 
     allocate_reads(options.read1, options.read2, options.outdir
-        , options.evalue, options.uproc)
+        , options.evalue, options.uproc, options.isolates)
 
 
 if __name__ == '__main__':
